@@ -14,61 +14,22 @@ const fetchData = async (searchTerm) => {
     return response.data.Search;
 };
 
-const root = document.querySelector('.autocomplete');
-root.innerHTML = `
-  <label><b>Search For a Movie</b></label>
-  <input class="input" />
-  <div class="dropdown">
-    <div class="dropdown-menu">
-      <div class="dropdown-content results"></div>
-    </div>
-  </div>
-`;
-
-const input = document.querySelector('input');
-const dropdown = document.querySelector('.dropdown');
-const resultsWrapper = document.querySelector('.results');
-
-const onInput = async event => {
-    const movies = await fetchData(event.target.value);
-    if (!movies.length) {
-        dropdown.classList.remove('is-active')
-        return; //we return because we don't need to keep processing nothing
-    }
-    resultsWrapper.innerHTML = '';
-    dropdown.classList.add('is-active');
-    for (let movie of movies) {
-        const option = document.createElement('a');
-
-        //we need this because may exist some corrupted images
+createAutoComplete({
+    root: document.querySelector('.autocomplete'),
+    renderOption(movie) {
         const imgSrc = movie.Poster === 'N/A' ? '' : movie.Poster;
-
-        option.classList.add('dropdown-item');
-        option.innerHTML = `
+        return `
             <img src="${imgSrc}" />
-            ${movie.Title}
+            ${movie.Title} (${movie.Year})
         `;
-
-        option.addEventListener('click', event => {
-            dropdown.classList.remove('is-active') // to close the dropdown
-            input.value = movie.Title
-
-            const movieDetail = onMovieSelect(movie);
-
-        });
-
-        resultsWrapper.appendChild(option);
+    },
+    onOptionSelect(movie) {
+        onMovieSelect(movie);
+    },
+    inputValue(movie) {
+        return movie.Title;
     }
-};
-input.addEventListener('input', debounce(onInput, 700));
-
-document.addEventListener('click', event => {
-    //console.log(event.target); // with this console.log we can see here the user clicked on the hole document
-    if (!root.contains(event.target)) {
-        dropdown.classList.remove('is-active') // to close the dropdown
-    }
-})
-
+});
 
 const onMovieSelect = async movie => {
     const response = await axios.get('http://www.omdbapi.com/', {
